@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VSM Data | Intelligence BI</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+    <aside class="sidebar">
+        <div class="logo">
+            <i class="fas fa-database"></i>
+            <span>VSM <strong>DATA</strong></span>
+        </div>
+        <div class="upload-area">
+            <label for="arquivo_csv" class="btn-import">
+                <i class="fas fa-file-import"></i> Importar CSV
+            </label>
+            <input type="file" id="arquivo_csv" accept=".csv" onchange="importarArquivo()">
+        </div>
+        <div id="status-carga" class="status-off">Sistema Offline</div>
+    </aside>
+
+    <main class="main-content">
+        <header class="top-bar">
+            <div class="title-group">
+                <h1>Central de Indicadores</h1>
+                <div class="tab-system">
+                    <button class="tab-btn active" onclick="switchTab('dashboard')">Dashboard</button>
+                    <button class="tab-btn" onclick="switchTab('resumo')">Resumo Executivo</button>
+                    <button class="tab-btn" onclick="switchTab('consideracoes')">Considerações Finais</button>
+                </div>
+            </div>
+            <div id="last-update">Aguardando dados...</div>
+        </header>
+
+        <section id="tab-dashboard" class="tab-content active">
+            <section class="dashboard-grid">
+                <div class="card kpi">
+                    <div class="kpi-icon blue"><i class="fas fa-rocket"></i></div>
+                    <div>
+                        <h3>Implantados</h3>
+                        <h2 id="val-implantados">0</h2>
+                    </div>
+                </div>
+
+                <div class="card kpi">
+                    <div class="kpi-icon red"><i class="fas fa-user-slash"></i></div>
+                    <div>
+                        <h3>Cancelados</h3>
+                        <h2 id="val-cancelados">0</h2>
+                    </div>
+                </div>
+
+                <div class="card chart-container">
+                    <h3><i class="fas fa-chart-bar"></i> Produtos por Implantação</h3>
+                    <div style="position: relative; height:280px;"><canvas id="chartImplantados"></canvas></div>
+                </div>
+
+                <div class="card chart-container">
+                    <h3><i class="fas fa-chart-pie"></i> Motivos de Cancelamento</h3>
+                    <div style="position: relative; height:280px;"><canvas id="chartMotivos"></canvas></div>
+                </div>
+
+                <div class="card full-width">
+                    <h3><i class="fas fa-list-ul"></i> Detalhamento por Produto (Cancelamentos)</h3>
+                    <div id="badge-container" class="badge-grid"></div>
+                </div>
+            </section>
+        </section>
+
+        <section id="tab-resumo" class="tab-content">
+            <div id="ai-insights" class="insights-grid">
+                <div class="card full-width">
+                    <p style="color: var(--text-dim)">Aguardando importação de dados...</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="tab-consideracoes" class="tab-content">
+            <div class="card full-width">
+                <div id="relatorio-texto" class="narrative-report">
+                    <p style="color: var(--text-dim)">Aguardando processamento analítico...</p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script src="script.js"></script>
+</body>
+</html>
