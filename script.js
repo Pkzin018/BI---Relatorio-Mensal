@@ -1,18 +1,30 @@
 let charts = {};
 
-// Gerencia a persistência e o redimensionamento
 window.onload = function() {
     const savedData = localStorage.getItem('vsm_bi_cache');
     if (savedData) processarCSV(savedData, true);
 };
+
+function formatarMoeda(valor) {
+    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(parseFloat(valor) || 0);
+}
+
+function parseFormat(t) {
+    const obj = {};
+    if (t && t !== '0') {
+        t.split('|').forEach(i => {
+            const parts = i.split('=');
+            if (parts.length === 2) obj[parts[0].trim()] = parseInt(parts[1].trim());
+        });
+    }
+    return obj;
+}
 
 function switchTab(tabName) {
     document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
     document.getElementById('tab-' + tabName).classList.add('active');
     event.currentTarget.classList.add('active');
-    
-    // Corrige o bug dos gráficos "caindo" ao trocar de aba
     Object.values(charts).forEach(chart => chart.resize());
 }
 
@@ -34,7 +46,9 @@ function processarCSV(csv, isCache = false) {
     const dados = linhas.reduce((acc, linha) => {
         const colunas = linha.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
         if (colunas.length >= 2) {
-            acc[colunas[0].replace(/"/g, "").trim()] = colunas[1].replace(/"/g, "").trim();
+            const chave = colunas[0].replace(/"/g, "").trim();
+            const valor = colunas[1].replace(/"/g, "").trim();
+            acc[chave] = valor;
         }
         return acc;
     }, {});
@@ -44,11 +58,16 @@ function processarCSV(csv, isCache = false) {
 }
 
 function atualizarDashboard(dados) {
-    const impT = parseInt(dados["1. Quantidade Novos Implantados"]) || 0;
-    const canT = parseInt(dados["4. Quantidade cliente cancelados"]) || 0;
-    
-    document.getElementById('val-implantados').innerText = impT;
-    document.getElementById('val-cancelados').innerText = canT;
+    // Mapeamento direto das chaves do SQL
+    const impQtd = dados["1. Quantidade Novos Implantados"] || 0;
+    const impVal = dados["2. Valor total implantado"] || 0;
+    const canQtd = dados["4. Quantidade cliente cancelados"] || 0;
+    const canVal = dados["5. Valor total cancelado"] || 0;
+
+    document.getElementById('val-implantados').innerText = impQtd;
+    document.getElementById('fin-implantados').innerText = formatarMoeda(impVal);
+    document.getElementById('val-cancelados').innerText = canQtd;
+    document.getElementById('fin-cancelados').innerText = formatarMoeda(canVal);
     document.getElementById('last-update').innerText = "Carga: " + new Date().toLocaleTimeString();
 
     gerarGraficoBarras('chartImplantados', parseFormat(dados["3. Quantidade por produto implantado"]), '#38bdf8');
@@ -58,59 +77,19 @@ function atualizarDashboard(dados) {
     gerarRelatorioFinal(dados);
 }
 
-function gerarRelatorioFinal(dados) {
-    const container = document.getElementById('relatorio-texto');
-    const impT = parseInt(dados["1. Quantidade Novos Implantados"]) || 0;
-    const canT = parseInt(dados["4. Quantidade cliente cancelados"]) || 0;
-    const saldo = impT - canT;
-    const evasao = impT > 0 ? ((canT / impT) * 100).toFixed(1) : 0;
-    
-    const impProds = Object.entries(parseFormat(dados["3. Quantidade por produto implantado"])).sort((a,b)=>b[1]-a[1]);
-    const canProds = Object.entries(parseFormat(dados["6. Quantidade de cancelamento por produto"])).sort((a,b)=>b[1]-a[1]);
-    const motivos = Object.entries(parseFormat(dados["7. Motivo de cancelamento"])).sort((a,b)=>b[1]-a[1]);
-
-    const topProd = impProds[0]?.[0] || "N/A";
-    const piorProd = canProds[0]?.[0] || "N/A";
-    const principalMotivo = motivos[0]?.[0] || "não identificado";
-
-    container.innerHTML = `
-        <div class="report-section">
-            <h3><i class="fas fa-chart-line"></i> 1. Panorama de Expansão e Vendas</h3>
-            <p>A operação atual demonstra um vigor comercial de <span class="text-positive">${impT} novas unidades implantadas</span>. O grande destaque deste período é o produto <span class="text-positive">${topProd}</span>, que lidera o ranking de adesão. Este movimento sugere uma forte aceitação desta solução específica pelo mercado ou uma campanha comercial bem-sucedida focada neste segmento.</p>
-        </div>
-
-        <div class="report-section">
-            <h3><i class="fas fa-user-shield"></i> 2. Retenção e Saúde da Base</h3>
-            <p>Registramos a saída de <span class="text-negative">${canT} clientes</span> no período analisado. Realizando o balanço matemático de <span class="text-positive">Implantados (${impT})</span> menos <span class="text-negative">Cancelados (${canT})</span>, chegamos a um <b>Saldo Líquido de <span class="${saldo>=0?'text-positive':'text-negative'}">${saldo} clientes</span></b>. Embora o saldo seja um indicador vital, notamos que o produto <span class="text-negative">${piorProd}</span> é o que mais sofre com desligamentos, o que exige uma auditoria de qualidade ou de usabilidade.</p>
-        </div>
-
-        <div class="report-section">
-            <h3><i class="fas fa-exclamation-circle"></i> 3. Diagnóstico Qualitativo de Perdas</h3>
-            <p>A <b>Taxa de Evasão</b> está calculada em <span class="${evasao > 15 ? 'text-negative' : 'text-positive'}">${evasao}%</span>. Ao analisarmos o "porquê" dessas perdas, o fator <span class="text-negative">"${principalMotivo}"</span> aparece como o principal detrator. Isso indica que a solução para reduzir o cancelamento não é apenas técnica, mas possivelmente processual ou de atendimento ligada a este motivo específico.</p>
-        </div>
-
-        <div class="report-section">
-            <h3><i class="fas fa-lightbulb"></i> 4. Recomendações Estratégicas</h3>
-            <p>Para o próximo ciclo, a recomendação é focar na proteção da base de clientes do produto <span class="text-negative">${piorProd}</span>. Além disso, manter o fôlego nas implantações de <span class="text-positive">${topProd}</span> garantirá que o saldo líquido permaneça positivo, desde que a causa raiz <span class="text-negative">"${principalMotivo}"</span> seja endereçada pela equipe de Customer Success.</p>
-        </div>
-    `;
-}
-
 function gerarResumoExecutivo(dados) {
     const container = document.getElementById('ai-insights');
-    const impT = parseInt(dados["1. Quantidade Novos Implantados"]) || 0;
-    const canT = parseInt(dados["4. Quantidade cliente cancelados"]) || 0;
-    const saldo = impT - canT;
-    const taxaEvasao = impT > 0 ? ((canT/impT)*100).toFixed(1) : 0;
+    const vImp = parseFloat(dados["2. Valor total implantado"]) || 0;
+    const vCan = parseFloat(dados["5. Valor total cancelado"]) || 0;
+    const saldo = vImp - vCan;
 
     container.innerHTML = `
         <div class="insight-item" style="grid-column: span 2; border-left: 4px solid var(--accent-blue);">
-            <h4>Balanço Geral (Cálculo Linear)</h4>
-            <div style="display: grid; grid-template-columns: repeat(4, 1fr); text-align: center;">
-                <div><small>Implantados</small><br><strong class="text-positive">${impT}</strong></div>
-                <div><small>Cancelados</small><br><strong class="text-negative">${canT}</strong></div>
-                <div><small>Saldo Líquido</small><br><strong style="color:${saldo >= 0 ? '#00ff88' : '#fb7185'}">${saldo}</strong></div>
-                <div><small>Taxa de Evasão</small><br><strong>${taxaEvasao}%</strong></div>
+            <h4>Balanço Financeiro Consolidado</h4>
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); text-align: center;">
+                <div><small>Novas Receitas</small><br><strong class="text-positive">${formatarMoeda(vImp)}</strong></div>
+                <div><small>Churn (Perda)</small><br><strong class="text-negative">${formatarMoeda(vCan)}</strong></div>
+                <div><small>Saldo Líquido</small><br><strong style="color:${saldo >= 0 ? '#00ff88' : '#fb7185'}">${formatarMoeda(saldo)}</strong></div>
             </div>
         </div>
         <div class="insight-item">
@@ -118,16 +97,42 @@ function gerarResumoExecutivo(dados) {
             <table>${Object.entries(parseFormat(dados["7. Motivo de cancelamento"])).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`<tr><td>${k}</td><td style="text-align:right"><b>${v}</b></td></tr>`).join('')}</table>
         </div>
         <div class="insight-item">
-            <h4>Performance Prod.</h4>
-            <table>${Object.keys({...parseFormat(dados["3. Quantidade por produto implantado"]), ...parseFormat(dados["6. Quantidade de cancelamento por produto"])}).map(p=>`<tr><td>${p}</td><td style="text-align:center;color:var(--accent-blue)">${parseFormat(dados["3. Quantidade por produto implantado"])[p]||0}</td><td style="text-align:right;color:var(--accent-red)">${parseFormat(dados["6. Quantidade de cancelamento por produto"])[p]||0}</td></tr>`).join('')}</table>
+            <h4>Performance Prod. (Imp x Can)</h4>
+            <table>${Object.keys({...parseFormat(dados["3. Quantidade por produto implantado"]), ...parseFormat(dados["6. Quantidade de cancelamento por produto"])}).map(p=>`<tr><td>${p}</td><td style="color:var(--accent-blue); text-align:right">${parseFormat(dados["3. Quantidade por produto implantado"])[p]||0}</td><td style="color:var(--accent-red); text-align:right">${parseFormat(dados["6. Quantidade de cancelamento por produto"])[p]||0}</td></tr>`).join('')}</table>
         </div>`;
 }
 
-// Helpers e Gráficos estáveis
-function parseFormat(t) {
-    const obj = {};
-    if (t && t !== '0') t.split('|').forEach(i => { const [n, q] = i.split('='); if(n) obj[n.trim()] = parseInt(q); });
-    return obj;
+function gerarRelatorioFinal(dados) {
+    const container = document.getElementById('relatorio-texto');
+    const impT = parseInt(dados["1. Quantidade Novos Implantados"]) || 0;
+    const canT = parseInt(dados["4. Quantidade cliente cancelados"]) || 0;
+    const vImp = parseFloat(dados["2. Valor total implantado"]) || 0;
+    const vCan = parseFloat(dados["5. Valor total cancelado"]) || 0;
+    const churnRate = impT > 0 ? ((canT / impT) * 100).toFixed(1) : 0;
+    
+    const impProds = Object.entries(parseFormat(dados["3. Quantidade por produto implantado"])).sort((a,b)=>b[1]-a[1]);
+    const topProd = impProds[0]?.[0] || "N/A";
+    const motivos = Object.entries(parseFormat(dados["7. Motivo de cancelamento"])).sort((a,b)=>b[1]-a[1]);
+    const principalMotivo = motivos[0]?.[0] || "não identificado";
+
+    container.innerHTML = `
+        <div class="report-section">
+            <h3><i class="fas fa-rocket"></i> 1. Desempenho e Expansão</h3>
+            <p>Neste ciclo, a operação registrou <span class="text-positive">${impT} novas implantações</span>, o que representa um incremento de <strong>${formatarMoeda(vImp)}</strong> em nossa receita recorrente. O destaque absoluto foi o produto <span class="text-positive">${topProd}</span>, que segue liderando a preferência do mercado e validando nossa estratégia comercial para este segmento.</p>
+        </div>
+        <div class="report-section">
+            <h3><i class="fas fa-balance-scale"></i> 2. Saúde da Base e Retenção</h3>
+            <p>Do lado da retenção, enfrentamos a saída de <span class="text-negative">${canT} clientes</span>, totalizando uma perda financeira de <span class="text-negative">${formatarMoeda(vCan)}</span>. Com uma taxa de evasão operacional de <strong>${churnRate}%</strong>, o balanço final entre entradas e saídas permanece no azul, mas exige atenção aos pontos de fricção.</p>
+        </div>
+        <div class="report-section">
+            <h3><i class="fas fa-exclamation-triangle"></i> 3. Diagnóstico Qualitativo</h3>
+            <p>Ao analisarmos o "porquê" das saídas, o motivo <strong>"${principalMotivo}"</strong> surge como o principal detrator. Isso indica que não estamos perdendo clientes apenas por preço ou mercado, mas possivelmente por uma questão específica que o time de Customer Success pode atacar diretamente.</p>
+        </div>
+        <div class="report-section">
+            <h3><i class="fas fa-lightbulb"></i> 4. Recomendações Estratégicas</h3>
+            <p>O foco para o próximo período deve ser duplo: manter a tração de vendas do <strong>${topProd}</strong> e implementar uma força-tarefa para mitigar o motivo <strong>"${principalMotivo}"</strong>. Reduzir essa perda é, atualmente, o caminho mais rápido para aumentar o saldo líquido sem necessariamente elevar o custo de aquisição de novos clientes.</p>
+        </div>
+    `;
 }
 
 function gerarGraficoBarras(id, dados, cor) {
