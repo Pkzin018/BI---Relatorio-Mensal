@@ -15,6 +15,7 @@ body { background: var(--bg-dark); color: var(--text-main); display: flex; min-h
 .logo { font-size: 1.2rem; display: flex; align-items: center; gap: 10px; color: var(--accent-blue); }
 .btn-import { background: var(--accent-blue); color: #000; padding: 12px; border-radius: 8px; text-align: center; font-weight: bold; cursor: pointer; display: block; }
 input[type="file"] { display: none; }
+.status-off { font-size: 0.75rem; color: var(--text-dim); margin-top: auto; }
 
 .main-content { flex: 1; padding: 30px; overflow-y: auto; height: 100vh; }
 .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; position: sticky; top: 0; background: var(--bg-dark); z-index: 10; padding: 10px 0; }
