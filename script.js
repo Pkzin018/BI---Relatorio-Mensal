@@ -141,7 +141,10 @@ function gerarGraficoBarras(id, dados, cor) {
     charts[id] = new Chart(ctx, {
         type: 'bar',
         data: { labels: Object.keys(dados), datasets: [{ data: Object.values(dados), backgroundColor: cor, borderRadius: 5 }] },
-        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+        options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    animation: false,
     });
 }
 
@@ -151,7 +154,10 @@ function gerarGraficoPizza(id, dados) {
     charts[id] = new Chart(ctx, {
         type: 'doughnut',
         data: { labels: Object.keys(dados), datasets: [{ data: Object.values(dados), backgroundColor: ['#fb7185', '#38bdf8', '#818cf8', '#fbbf24', '#34d399'], borderWidth: 0 }] },
-        options: { responsive: true, maintainAspectRatio: false, cutout: '75%', plugins: { legend: { position: 'right', labels: { color: '#f8fafc' } } } }
+       options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    animation: false,
     });
 }
 
@@ -168,4 +174,36 @@ function renderizarDetalhes(texto) {
             <div class="progress-bg"><div class="progress-fill" style="width: ${(qtd/maximo)*100}%"></div></div>`;
         container.appendChild(card);
     });
+}
+
+function gerarRelatorioPDF() {
+
+    // força dashboard
+    switchTabDireta('dashboard');
+
+    // aguarda renderização dos gráficos
+    setTimeout(() => {
+
+        Object.values(charts).forEach(chart => {
+            chart.resize();
+            chart.update();
+        });
+
+        document.body.classList.add('print-mode');
+
+        window.print();
+
+        setTimeout(() => {
+            document.body.classList.remove('print-mode');
+        }, 1000);
+
+    }, 500);
+}
+
+function switchTabDireta(tabName) {
+    document.querySelectorAll('.tab-content')
+        .forEach(t => t.classList.remove('active'));
+
+    document.getElementById('tab-' + tabName)
+        .classList.add('active');
 }
