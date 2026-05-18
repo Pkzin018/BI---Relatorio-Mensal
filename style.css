@@ -52,3 +52,138 @@ input[type="file"] { display: none; }
 .text-negative { color: var(--accent-red); font-weight: bold; }
 
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+/* =========================================
+   MODO IMPRESSÃO PROFISSIONAL
+========================================= */
+
+@media print {
+
+    body {
+        background: white !important;
+        color: #000 !important;
+        overflow: visible !important;
+        display: block !important;
+    }
+
+    .sidebar,
+    .tab-system,
+    .btn-print,
+    #arquivo_csv,
+    .upload-area,
+    .status-off {
+        display: none !important;
+    }
+
+    .main-content {
+        width: 100% !important;
+        height: auto !important;
+        overflow: visible !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        background: white !important;
+    }
+
+    .top-bar {
+        position: relative !important;
+        background: white !important;
+        border-bottom: 2px solid #ddd;
+        padding-bottom: 20px;
+        margin-bottom: 30px;
+    }
+
+    .top-bar h1 {
+        color: #111 !important;
+        font-size: 28px;
+    }
+
+    #last-update {
+        color: #555 !important;
+        font-size: 12px;
+    }
+
+    .dashboard-grid {
+        display: grid !important;
+        grid-template-columns: 1fr 1fr !important;
+        gap: 20px !important;
+    }
+
+    .card,
+    .insight-item,
+    .detail-card {
+        background: white !important;
+        border: 1px solid #dcdcdc !important;
+        color: #000 !important;
+        box-shadow: none !important;
+        break-inside: avoid;
+        page-break-inside: avoid;
+    }
+
+    .card h3,
+    .report-section h3,
+    .insight-item h4 {
+        color: #111 !important;
+    }
+
+    .text-positive {
+        color: #0077cc !important;
+    }
+
+    .text-negative {
+        color: #d62839 !important;
+    }
+
+    canvas {
+        max-width: 100% !important;
+        height: 280px !important;
+    }
+
+    .chart-container {
+        min-height: 420px;
+    }
+
+    .badge-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .progress-bg {
+        background: #ddd !important;
+    }
+
+    .progress-fill {
+        background: #0077cc !important;
+    }
+
+    .report-section {
+        margin-bottom: 30px;
+    }
+
+    .tab-content {
+        display: none !important;
+    }
+
+    .tab-content.active {
+        display: block !important;
+    }
+
+    @page {
+        size: A4;
+        margin: 18mm;
+    }
+}
+
+/* =========================================
+   AJUSTES GERAIS
+========================================= */
+
+.chart-container {
+    min-height: 400px;
+}
+
+.chart-container canvas {
+    width: 100% !important;
+}
+
+.btn-print:hover {
+    background: #0056b3 !important;
+}
